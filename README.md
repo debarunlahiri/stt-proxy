@@ -142,7 +142,7 @@ stt-proxy/
 │   │   └── proxyService.js       # Python backend proxy
 │   ├── utils/
 │   │   └── logger.js             # Winston logger
-│   └── server.js                 # Main server file
+│   └── app.js                    # Main application file
 ├── package.json
 ├── .env                          # Environment configuration
 ├── .env.example                  # Example configuration

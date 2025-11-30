@@ -2,10 +2,10 @@
   "name": "stt-proxy",
   "version": "1.0.0",
   "description": "Node.js proxy server for STT backend - proxies requests between Android and Python backend",
-  "main": "src/server.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
   },
   "keywords": [
     "stt",

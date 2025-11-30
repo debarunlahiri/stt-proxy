@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Recordings - STT Proxy</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    .header {
+      background: #667eea;
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+    .content {
+      padding: 30px;
+    }
+    .stats {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .stats h2 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+    .recordings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .recording-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+    .recording-item:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+    .recording-info h3 {
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 1.1em;
+    }
+    .recording-meta {
+      color: #666;
+      font-size: 0.9em;
+    }
+    .recording-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      display: inline-block;
+    }
+    .btn-view {
+      background: #667eea;
+      color: white;
+    }
+    .btn-view:hover {
+      background: #5568d3;
+    }
+    .btn-download {
+      background: #ed8936;
+      color: white;
+    }
+    .btn-download:hover {
+      background: #dd6b20;
+    }
+    .audio-player-wrapper {
+      margin-top: 15px;
+      display: block;
+    }
+    .audio-player-wrapper audio {
+      display: none;
+    }
+    .audio-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+    .play-pause-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 50%;
+      background: #667eea;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+    .play-pause-btn:hover {
+      background: #5568d3;
+      transform: scale(1.1);
+    }
+    .progress-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-filled {
+      height: 100%;
+      background: #667eea;
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+    .time-display {
+      font-size: 0.85em;
+      color: #666;
+      display: flex;
+      justify-content: space-between;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    .empty-state h2 {
+      margin-bottom: 10px;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-top: 30px;
+      padding: 20px;
+    }
+    .pagination-btn {
+      padding: 10px 16px;
+      border: 1px solid #e0e0e0;
+      background: white;
+      color: #667eea;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .pagination-btn:hover:not(.disabled):not(.active) {
+      background: #f8f9fa;
+      border-color: #667eea;
+    }
+    .pagination-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+    .pagination-btn.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .pagination-info {
+      padding: 0 10px;
+      color: #666;
+    }
+    @media (max-width: 768px) {
+      .recording-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .recording-actions {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+      .btn {
+        flex: 1;
+        text-align: center;
+      }
+      .audio-controls {
+        width: 100%;
+      }
+    }
+  </style>
+  <script>
+    let currentlyPlaying = null;
+    
+    function formatTime(seconds) {
+      if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return mins + ':' + (secs < 10 ? '0' : '') + secs;
+    }
+    
+    function togglePlay(audioId) {
+      const audio = document.getElementById(audioId);
+      if (!audio) return;
+      
+      const playIcon = audio.parentElement.querySelector('.play-icon');
+      const pauseIcon = audio.parentElement.querySelector('.pause-icon');
+      const playerWrapper = audio.closest('.audio-player-wrapper');
+      
+      // Stop any currently playing audio
+      if (currentlyPlaying && currentlyPlaying !== audio) {
+        currentlyPlaying.pause();
+        currentlyPlaying.currentTime = 0;
+        const otherPlayIcon = currentlyPlaying.parentElement.querySelector('.play-icon');
+        const otherPauseIcon = currentlyPlaying.parentElement.querySelector('.pause-icon');
+        const otherProgressBar = document.getElementById('progress-filled-' + currentlyPlaying.id);
+        const otherCurrentTime = document.getElementById('current-time-' + currentlyPlaying.id);
+        if (otherPlayIcon) otherPlayIcon.style.display = 'inline';
+        if (otherPauseIcon) otherPauseIcon.style.display = 'none';
+        if (otherProgressBar) otherProgressBar.style.width = '0%';
+        if (otherCurrentTime) otherCurrentTime.textContent = '0:00';
+      }
+      
+      if (audio.paused) {
+        if (!audio.src) {
+          audio.src = audio.getAttribute('data-src');
+        }
+        audio.play().catch(err => {
+          console.error('Error playing audio:', err);
+        });
+        if (playIcon) playIcon.style.display = 'none';
+        if (pauseIcon) pauseIcon.style.display = 'inline';
+        if (playerWrapper) playerWrapper.classList.add('active');
+        currentlyPlaying = audio;
+      } else {
+        audio.pause();
+        if (playIcon) playIcon.style.display = 'inline';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+        currentlyPlaying = null;
+      }
+    }
+    
+    function setupAudioPlayer(audioId) {
+      const audio = document.getElementById(audioId);
+      if (!audio) return;
+      
+      const progressBar = document.getElementById('progress-filled-' + audioId);
+      const currentTimeSpan = document.getElementById('current-time-' + audioId);
+      const durationSpan = document.getElementById('duration-' + audioId);
+      const progressContainer = document.getElementById('progress-' + audioId);
+      
+      audio.addEventListener('loadedmetadata', () => {
+        durationSpan.textContent = formatTime(audio.duration);
+      });
+      
+      audio.addEventListener('timeupdate', () => {
+        if (audio.duration) {
+          const percent = (audio.currentTime / audio.duration) * 100;
+          progressBar.style.width = percent + '%';
+          currentTimeSpan.textContent = formatTime(audio.currentTime);
+        }
+      });
+      
+      audio.addEventListener('ended', () => {
+        const playIcon = audio.parentElement.querySelector('.play-icon');
+        const pauseIcon = audio.parentElement.querySelector('.pause-icon');
+        const playerWrapper = audio.closest('.audio-player-wrapper');
+        if (playIcon) playIcon.style.display = 'inline';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+        if (progressBar) progressBar.style.width = '0%';
+        if (currentTimeSpan) currentTimeSpan.textContent = '0:00';
+        if (playerWrapper) playerWrapper.classList.remove('active');
+        if (currentlyPlaying === audio) {
+          currentlyPlaying = null;
+        }
+      });
+      
+      audio.addEventListener('pause', () => {
+        if (currentlyPlaying === audio && audio.ended) {
+          currentlyPlaying = null;
+        }
+      });
+      
+      progressContainer.addEventListener('click', (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        const percent = (e.clientX - rect.left) / rect.width;
+        audio.currentTime = percent * audio.duration;
+      });
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      const audioElements = document.querySelectorAll('audio[data-src]');
+      audioElements.forEach(audio => {
+        setupAudioPlayer(audio.id);
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Audio Recordings</h1>
+      <p>STT Proxy Server</p>
+    </div>
+    <div class="content">
+      <div class="stats">
+        <h2>Total Recordings: {{totalRecordings}}</h2>
+        <p>Showing {{showingRange}} of {{totalRecordings}}</p>
+      </div>
+      {{recordingsList}}
+      {{pagination}}
+    </div>
+  </div>
+</body>
+</html>
+
