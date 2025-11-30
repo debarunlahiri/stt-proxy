@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Translate - STT Proxy</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    .header {
+      background: #667eea;
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+    .content {
+      padding: 30px;
+    }
+    .translate-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+    .input-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .input-section label {
+      display: block;
+      font-weight: 600;
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+    .source-language-selector {
+      margin-bottom: 15px;
+    }
+    .source-language-selector select {
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 1em;
+      width: 100%;
+      max-width: 300px;
+      background: white;
+      cursor: pointer;
+    }
+    .source-language-selector select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .text-input-container {
+      position: relative;
+    }
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1.1em;
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color 0.3s ease;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .char-count {
+      position: absolute;
+      bottom: 10px;
+      right: 15px;
+      color: #999;
+      font-size: 0.9em;
+    }
+    .translate-btn {
+      margin-top: 15px;
+      padding: 12px 30px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+      max-width: 200px;
+    }
+    .translate-btn:hover:not(:disabled) {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .translate-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .translate-btn.loading {
+      position: relative;
+      color: transparent;
+    }
+    .translate-btn.loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .results-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .translation-card {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      border: 2px solid #e0e0e0;
+      transition: all 0.3s ease;
+    }
+    .translation-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .translation-card h3 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 1.2em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .language-flag {
+      font-size: 1.5em;
+    }
+    .translation-text {
+      color: #333;
+      font-size: 1.1em;
+      line-height: 1.6;
+      min-height: 100px;
+      padding: 10px;
+      background: white;
+      border-radius: 6px;
+      word-wrap: break-word;
+    }
+    .translation-text.empty {
+      color: #999;
+      font-style: italic;
+    }
+    .copy-btn {
+      margin-top: 10px;
+      padding: 8px 16px;
+      background: #48bb78;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+    .copy-btn:hover {
+      background: #38a169;
+    }
+    .copy-btn.copied {
+      background: #667eea;
+    }
+    .error-message {
+      background: #fee;
+      color: #c33;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #c33;
+    }
+    .detected-language {
+      margin-top: 10px;
+      padding: 10px;
+      background: #e6f3ff;
+      border-radius: 6px;
+      font-size: 0.9em;
+      color: #667eea;
+    }
+    .nav-links {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      margin: 0 15px;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+    .nav-links a:hover {
+      color: #5568d3;
+    }
+    @media (max-width: 768px) {
+      .translate-container {
+        grid-template-columns: 1fr;
+      }
+      .results-section {
+        grid-template-columns: 1fr;
+      }
+      .translate-btn {
+        width: 100%;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Translate</h1>
+      <p>STT Proxy Server - Multi-language Translation</p>
+    </div>
+    <div class="content">
+      <div class="translate-container">
+        <div class="input-section">
+          <label for="source-language">Source Language</label>
+          <div class="source-language-selector">
+            <select id="source-language">
+              <option value="auto">Auto-detect</option>
+              <option value="en">English</option>
+              <option value="hi">Hindi</option>
+              <option value="ko">Korean</option>
+            </select>
+          </div>
+          <label for="text-input">Enter text to translate</label>
+          <div class="text-input-container">
+            <textarea id="text-input" placeholder="Type or paste text here..."></textarea>
+            <span class="char-count" id="char-count">0 characters</span>
+          </div>
+          <button class="translate-btn" id="translate-btn" onclick="translateText()">Translate</button>
+          <div id="detected-language" class="detected-language" style="display: none;"></div>
+        </div>
+      </div>
+      <div id="error-message" class="error-message" style="display: none;"></div>
+      <div class="results-section" id="results-section">
+        <div class="translation-card">
+          <h3><span class="language-flag">🇬🇧</span> English</h3>
+          <div class="translation-text empty" id="translation-en">Translation will appear here...</div>
+          <button class="copy-btn" onclick="copyText('translation-en')">Copy</button>
+        </div>
+        <div class="translation-card">
+          <h3><span class="language-flag">🇮🇳</span> Hindi</h3>
+          <div class="translation-text empty" id="translation-hi">Translation will appear here...</div>
+          <button class="copy-btn" onclick="copyText('translation-hi')">Copy</button>
+        </div>
+        <div class="translation-card">
+          <h3><span class="language-flag">🇰🇷</span> Korean</h3>
+          <div class="translation-text empty" id="translation-ko">Translation will appear here...</div>
+          <button class="copy-btn" onclick="copyText('translation-ko')">Copy</button>
+        </div>
+      </div>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/recordings">Recordings</a>
+      </div>
+    </div>
+  </div>
+  <script>
+    const textInput = document.getElementById('text-input');
+    const charCount = document.getElementById('char-count');
+    const translateBtn = document.getElementById('translate-btn');
+    const errorMessage = document.getElementById('error-message');
+    const detectedLanguageDiv = document.getElementById('detected-language');
+
+    // Update character count
+    textInput.addEventListener('input', () => {
+      const count = textInput.value.length;
+      charCount.textContent = count + ' character' + (count !== 1 ? 's' : '');
+    });
+
+    // Allow Enter + Ctrl/Cmd to translate
+    textInput.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        translateText();
+      }
+    });
+
+    async function translateText() {
+      const text = textInput.value.trim();
+      const sourceLanguage = document.getElementById('source-language').value;
+
+      if (!text) {
+        showError('Please enter some text to translate.');
+        return;
+      }
+
+      // Hide error and detected language
+      errorMessage.style.display = 'none';
+      detectedLanguageDiv.style.display = 'none';
+
+      // Show loading state
+      translateBtn.disabled = true;
+      translateBtn.classList.add('loading');
+
+      // Clear previous translations
+      clearTranslations();
+
+      try {
+        const response = await fetch('/v1/translate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: text,
+            source_language: sourceLanguage === 'auto' ? null : sourceLanguage
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || 'Translation failed');
+        }
+
+        // Debug: log response
+        console.log('Translation response:', data);
+
+        // Display translations
+        if (data.english_text) {
+          setTranslation('translation-en', data.english_text);
+        } else {
+          console.warn('No english_text in response');
+        }
+        
+        if (data.hindi_text) {
+          setTranslation('translation-hi', data.hindi_text);
+        } else {
+          console.warn('No hindi_text in response');
+        }
+        
+        if (data.korean_text) {
+          setTranslation('translation-ko', data.korean_text);
+        } else {
+          console.warn('No korean_text in response');
+        }
+
+        // Show detected language if auto-detect was used
+        if (sourceLanguage === 'auto' && data.detected_language) {
+          const langNames = {
+            'en': 'English',
+            'hi': 'Hindi',
+            'ko': 'Korean'
+          };
+          detectedLanguageDiv.textContent = `Detected language: ${langNames[data.detected_language] || data.detected_language}`;
+          detectedLanguageDiv.style.display = 'block';
+        }
+
+      } catch (error) {
+        showError(error.message || 'Failed to translate. Please try again.');
+      } finally {
+        translateBtn.disabled = false;
+        translateBtn.classList.remove('loading');
+      }
+    }
+
+    function setTranslation(id, text) {
+      const element = document.getElementById(id);
+      element.textContent = text;
+      element.classList.remove('empty');
+    }
+
+    function clearTranslations() {
+      ['translation-en', 'translation-hi', 'translation-ko'].forEach(id => {
+        const element = document.getElementById(id);
+        element.textContent = 'Translation will appear here...';
+        element.classList.add('empty');
+      });
+    }
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+    }
+
+    function copyText(translationId) {
+      const element = document.getElementById(translationId);
+      const text = element.textContent;
+      
+      if (text === 'Translation will appear here...' || element.classList.contains('empty')) {
+        return;
+      }
+
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.classList.remove('copied');
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+      });
+    }
+  </script>
+</body>
+</html>
+

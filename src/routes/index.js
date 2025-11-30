@@ -14,6 +14,7 @@
  * - GET  /recordings/:filename - HTML page for individual recording
  * - GET  /api/recordings - JSON API listing all recordings
  * - GET  /api/recordings/:filename - JSON API for individual recording
+ * - GET  /translate     - HTML page for translating text
  * 
  * @author Debarun Lahiri
  */
@@ -44,6 +45,9 @@ router.post('/v1/transcribe', uploadMiddleware, transcribeController.transcribe)
 
 // Translation endpoint - Translates text to multiple languages
 router.post('/v1/translate', translateController.translate);
+
+// Translation page - HTML page for translating text
+router.get('/translate', translateController.getTranslatePage);
 
 // Language detection endpoint - Detects the language of provided text
 router.post('/v1/detect-language', languageDetectionController.detectLanguage);

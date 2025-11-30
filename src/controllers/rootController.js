@@ -34,6 +34,7 @@ const getRoot = (req, res) => {
       health: '/health',
       transcribe: '/v1/transcribe',
       translate: '/v1/translate',
+      translate_page: '/translate',
       detect_language: '/v1/detect-language',
       recordings: '/recordings',
       recordings_api: '/api/recordings',

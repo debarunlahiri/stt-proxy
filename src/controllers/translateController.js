@@ -8,7 +8,10 @@
  * @author Debarun Lahiri
  */
 
+const fs = require('fs').promises;
+const path = require('path');
 const proxyService = require('../services/proxyService');
+const logger = require('../utils/logger');
 
 /**
  * Translate text to multiple languages
@@ -54,6 +57,35 @@ const translate = async (req, res, next) => {
   }
 };
 
+/**
+ * Serve translation page
+ * 
+ * Returns an HTML page for translating text with a Google Translate-like interface.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} Sends HTML response
+ */
+const getTranslatePage = async (req, res) => {
+  try {
+    const templatePath = path.join(__dirname, '../templates/translate.html');
+    const template = await fs.readFile(templatePath, 'utf-8');
+    res.send(template);
+  } catch (error) {
+    logger.error(`Failed to generate translation page: ${error.message}`);
+    res.status(500).send(`
+      <html>
+        <head><title>Error</title></head>
+        <body>
+          <h1>Error loading translation page</h1>
+          <p>${error.message}</p>
+        </body>
+      </html>
+    `);
+  }
+};
+
 module.exports = {
-  translate
+  translate,
+  getTranslatePage
 };
